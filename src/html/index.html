@@ -1,11 +1,57 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>MOSS-일로가요</title>
+    <link rel="stylesheet" href="../css/index.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
+
 <body>
-    
+<div class="container">
+    <div class="circle">
+        <div class="controls"></div>
+        <p class="text">어디로 가시는지 알려주시면 도와드리겠습니다!</p>
+    </div>
+    <!-- 팝업 열기 버튼 -->
+    <button class="btn close">
+        <i class="fas fa-map"></i>
+    </button>
+    <!-- 기존 팝업 영역 -->
+    <div class="popup" id="mainPopup" style="display: none;"> <!-- 초기 상태에서 숨김 -->
+        <button class="close-popup" onclick="closeMainPopup()">닫기</button>
+        <h2>경로 검색</h2>
+
+        <!-- 출발지 및 목적지 입력창 추가 -->
+        <p>출발지: <span id="startAddress">GPS 정보를 받아오는 중...</span></p>
+        <input type="text" id="endAddress" placeholder="목적지 주소를 입력하세요" />
+        <button id="searchRoute">경로 검색</button>
+
+        <!-- 추가 기능: 상세 경로 보기 -->
+        <button id="viewRouteDetails">상세 경로 보기</button>
+
+        <!-- 지도 영역 -->
+        <div id="map" style="width: 100%; height: 900px; margin-top: 60px;"></div>
+    </div> <!-- 기존 팝업 영역 닫기 -->
+    <!-- 상세 경로 팝업 영역 -->
+    <div class="popup" id="detailsPopup">
+        <div id="detailsSection">
+            <div id="sidebar">
+                <h2>(대중교통)상세 경로 안내: <span id="total"></span></h2>
+                <div id="panel"></div>
+            </div>
+            <button class="close-popup" onclick="closeDetailsPopup()">닫기</button>
+            <button onclick="speak(routeDescription)">음성 안내 듣기</button>
+            <button id="print" onclick="window.print()">경로 인쇄하기</button>
+        </div>
+    </div>
+
+</div> <!-- 컨테이너 닫기 -->
+
+<!-- 자바스크립트 연결 -->
+<script src="../js/script.js"></script>
 </body>
+
 </html>
