@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSM 지도에 현재 위치 및 목적지 추가</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 500px;
+            width: 100%;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        input[type="text"] {
+            width: 300px;
+        }
+    </style>
+</head>
+<body>
+
+<h2>현재 위치 및 목적지 추가 (주소 기반)</h2>
+
+<!-- 목적지 입력 필드 -->
+<div class="controls">
+    <label for="destination">목적지 주소: </label>
+    <input type="text" id="destination" placeholder="목적지 주소를 입력하세요" required>
+    <button id="add-destination-btn">목적지 추가</button>
+</div>
+
+<!-- 지도 표시 영역 -->
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+    const odsayAPIKey = "coaTfZi0+fmSn3lY6zLIFeXT4D3hInsaWHZlioFJR9s"; // 여기에 본인의 ODSay API 키를 입력하세요
+    let map, currentLocationMarker;
+
+    function getCurrentLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(showPosition, showError);
+        } else {
+            alert("이 브라우저는 Geolocation을 지원하지 않습니다.");
+        }
+    }
+
+    function showPosition(position) {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        initMap(lat, lng);
+    }
+
+    function showError(error) {
+        alert("위치 정보를 가져오는 데 실패했습니다.");
+    }
+
+    function initMap(lat, lng) {
+        map = L.map('map').setView([lat, lng], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        currentLocationMarker = L.marker([lat, lng]).addTo(map)
+            .bindPopup('현재 위치')
+            .openPopup();
+    }
+
+    async function geocodeAddress(address) {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.length === 0) {
+            alert("해당 주소에 대한 좌표를 찾을 수 없습니다.");
+            return null;
+        }
+
+        return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    }
+
+    async function addDestinationMarker() {
+        const addressInput = document.getElementById('destination').value;
+        const coordinates = await geocodeAddress(addressInput);
+
+        if (!coordinates) return;
+
+        L.marker([coordinates.lat, coordinates.lng]).addTo(map)
+            .bindPopup('목적지: ' + addressInput)
+            .openPopup();
+
+        map.setView([coordinates.lat, coordinates.lng], 13);
+        getPublicTransportRoute(coordinates.lat, coordinates.lng); // 대중교통 경로 가져오기
+    }
+
+    // ODSay API를 통해 대중교통 경로를 가져오는 함수
+    async function getPublicTransportRoute(destLat, destLng) {
+        const currentLatLng = currentLocationMarker.getLatLng();
+        const url = `https://api.odsay.com/v1/api/searchPubTransPathT?SX=${currentLatLng.lng}&SY=${currentLatLng.lat}&EX=${destLng}&EY=${destLat}&apiKey=${odsayAPIKey}`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.error) {
+                alert("대중교통 정보를 가져오는 중 오류가 발생했습니다.");
+                return;
+            }
+
+            const path = data.result.path[0]; // 첫 번째 경로를 사용
+            const routeLatLngs = path.subPath.map(segment => [segment.startY, segment.startX]);
+
+            // 경로 표시
+            const polyline = L.polyline(routeLatLngs, { color: 'blue' }).addTo(map);
+            map.fitBounds(polyline.getBounds());
+
+            // 경로 안내 표시
+            alert(`대중교통 정보: ${path.info.startName}에서 ${path.info.endName}까지 이동`);
+        } catch (error) {
+            console.error("API 호출 오류:", error);
+            alert("대중교통 정보를 가져오는 중 오류가 발생했습니다.");
+        }
+    }
+
+    window.onload = getCurrentLocation;
+    document.getElementById('add-destination-btn').addEventListener('click', addDestinationMarker);
+</script>
+
+</body>
+</html>
